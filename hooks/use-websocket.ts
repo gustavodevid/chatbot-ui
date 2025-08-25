@@ -29,6 +29,7 @@ export function useWebSocket({ url, onMessage, onConnect, onDisconnect, onError 
   const maxReconnectAttempts = 5
 
   const connect = useCallback(() => {
+    // ... (nenhuma mudança necessária aqui)
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return
     }
@@ -39,51 +40,106 @@ export function useWebSocket({ url, onMessage, onConnect, onDisconnect, onError 
       wsRef.current = new WebSocket(url)
 
       wsRef.current.onopen = () => {
-        console.log("[v0] WebSocket connected")
+        console.log("[v1] WebSocket connected")
         setIsConnected(true)
         setConnectionStatus("connected")
         reconnectAttempts.current = 0
         onConnect?.()
       }
 
-      wsRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          const message: Message = {
-            id: data.id || Date.now().toString(),
-            content: data.content || data.message || event.data,
-            sender: data.sender || "bot",
-            timestamp: new Date(data.timestamp || Date.now()),
-          }
 
-          console.log("[v0] Received message:", message)
-          setMessages((prev) => [...prev, message])
-          onMessage?.(message)
-        } catch (error) {
-          console.error("[v0] Error parsing message:", error)
-          // Handle plain text messages
-          const message: Message = {
-            id: Date.now().toString(),
-            content: event.data,
-            sender: "bot",
-            timestamp: new Date(),
+      wsRef.current.onmessage = (event) => {
+        // DENTRO DE wsRef.current.onmessage
+
+try {
+  const data = JSON.parse(event.data);
+  console.log("[v3] Received data:", data); // Versão 3
+
+  switch (data.type) {
+    case "start":
+      const startMessage: Message = {
+        id: data.message_id || Date.now().toString(),
+        content: "",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, startMessage]);
+      break;
+
+    // ================== AJUSTE FINAL E MAIS IMPORTANTE ==================
+    // 1. Mudamos para o case 'token'
+    // 2. Usamos 'data.delta' para obter o conteúdo
+    case "token":
+      // Apenas adiciona conteúdo se 'delta' existir
+      if (data.delta) {
+        setMessages((prevMessages) => {
+          if (prevMessages.length === 0) return [];
+          const lastMessage = prevMessages[prevMessages.length - 1];
+          if (lastMessage && lastMessage.sender === "bot") {
+            return prevMessages.map((msg, index) =>
+              index === prevMessages.length - 1
+                ? { ...msg, content: msg.content + data.delta } // <-- USANDO data.delta
+                : msg
+            );
           }
-          setMessages((prev) => [...prev, message])
-          onMessage?.(message)
-        }
+          return prevMessages;
+        });
+      }
+      break;
+
+    // ================== AJUSTE FINAL ==================
+    // Adicionamos 'done' para funcionar junto com 'end' e 'turn_end'
+    case "end":
+    case "done":      // <-- NOVO
+    case "turn_end":
+      console.log("[v3] Stream ended with type:", data.type);
+      const finalBotMessage = messages[messages.length - 1];
+      if (finalBotMessage) {
+        onMessage?.(finalBotMessage);
+      }
+      break;
+
+    case "full_message":
+      const fullMessage: Message = {
+        id: data.id || Date.now().toString(),
+        content: data.content,
+        sender: "bot",
+        timestamp: new Date(data.timestamp || Date.now()),
+      };
+      setMessages((prev) => [...prev, fullMessage]);
+      onMessage?.(fullMessage);
+      break;
+
+    case "error":
+      const errorMessage: Message = {
+        id: data.id || Date.now().toString(),
+        content: `Erro: ${data.content}`,
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      onMessage?.(errorMessage);
+      break;
+
+    default:
+      console.warn("[v3] Received unknown message type:", data);
+  }
+} catch (error) {
+  console.error("[v3] Error parsing message or non-JSON message received:", event.data, error);
+}
       }
 
       wsRef.current.onclose = () => {
-        console.log("[v0] WebSocket disconnected")
+        // ... (nenhuma mudança necessária aqui)
+        console.log("[v1] WebSocket disconnected")
         setIsConnected(false)
         setConnectionStatus("disconnected")
         onDisconnect?.()
 
-        // Auto-reconnect logic
         if (reconnectAttempts.current < maxReconnectAttempts) {
           reconnectAttempts.current++
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000)
-          console.log(`[v0] Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`)
+          console.log(`[v1] Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`)
 
           reconnectTimeoutRef.current = setTimeout(() => {
             connect()
@@ -92,17 +148,19 @@ export function useWebSocket({ url, onMessage, onConnect, onDisconnect, onError 
       }
 
       wsRef.current.onerror = (error) => {
-        console.error("[v0] WebSocket error:", error)
+        // ... (nenhuma mudança necessária aqui)
+        console.error("[v1] WebSocket error:", error)
         setConnectionStatus("error")
         onError?.(error)
       }
     } catch (error) {
-      console.error("[v0] Failed to create WebSocket connection:", error)
+      console.error("[v1] Failed to create WebSocket connection:", error)
       setConnectionStatus("error")
     }
-  }, [url, onMessage, onConnect, onDisconnect, onError])
+  }, [url, onMessage, onConnect, onDisconnect, onError, messages]) // Adicionado 'messages' à lista de dependências
 
   const disconnect = useCallback(() => {
+    // ... (nenhuma mudança necessária aqui)
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
     }
@@ -117,8 +175,9 @@ export function useWebSocket({ url, onMessage, onConnect, onDisconnect, onError 
   }, [])
 
   const sendMessage = useCallback((content: string) => {
+    // ... (nenhuma mudança necessária aqui, o formato de envio está bom)
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.warn("[v0] WebSocket not connected, cannot send message")
+      console.warn("[v1] WebSocket not connected, cannot send message")
       return false
     }
 
@@ -130,22 +189,20 @@ export function useWebSocket({ url, onMessage, onConnect, onDisconnect, onError 
         timestamp: new Date(),
       }
 
-      // Add user message to local state immediately
       setMessages((prev) => [...prev, message])
 
-      // Send to server
       wsRef.current.send(
         JSON.stringify({
-          type: "message",
+          type: "message", // O back-end deve esperar por este tipo
           content,
           timestamp: message.timestamp.toISOString(),
         }),
       )
 
-      console.log("[v0] Sent message:", content)
+      console.log("[v1] Sent message:", content)
       return true
     } catch (error) {
-      console.error("[v0] Error sending message:", error)
+      console.error("[v1] Error sending message:", error)
       return false
     }
   }, [])
