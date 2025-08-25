@@ -25,28 +25,28 @@ Uma interface moderna de chatbot com comunicação WebSocket em tempo real, cons
 ## 📦 Instalação
 
 1. Clone o repositório:
-\`\`\`bash
+```bash
 git clone <url-do-repositorio>
 cd chatbot-ui
-\`\`\`
+```
 
 2. Instale as dependências:
-\`\`\`bash
+```bash
 npm install
 # ou
 yarn install
 # ou
 pnpm install
-\`\`\`
+```
 
 3. Execute o projeto em modo de desenvolvimento:
-\`\`\`bash
+```bash
 npm run dev
 # ou
 yarn dev
 # ou
 pnpm dev
-\`\`\`
+```
 
 4. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
@@ -54,7 +54,7 @@ pnpm dev
 
 Por padrão, o chatbot tenta se conectar ao WebSocket em `ws://localhost:8080`. Para alterar a URL de conexão, modifique a variável no hook `useWebSocket`:
 
-\`\`\`typescript
+```typescript
 // hooks/use-websocket.ts
 const [socket, setSocket] = useState<WebSocket | null>(null);
 const [isConnected, setIsConnected] = useState(false);
@@ -64,34 +64,34 @@ const connectWebSocket = useCallback(() => {
   const ws = new WebSocket('ws://seu-servidor:porta');
   // ...
 }, []);
-\`\`\`
+```
 
 ## 📡 Protocolo de Mensagens
 
 O chatbot espera mensagens WebSocket no seguinte formato JSON:
 
 ### Mensagem do Cliente para Servidor:
-\`\`\`json
+```json
 {
   "type": "message",
   "content": "Sua mensagem aqui",
   "timestamp": "2024-01-01T12:00:00.000Z"
 }
-\`\`\`
+```
 
 ### Mensagem do Servidor para Cliente:
-\`\`\`json
+```json
 {
   "type": "message",
   "content": "Resposta do bot",
   "timestamp": "2024-01-01T12:00:00.000Z",
   "sender": "bot"
 }
-\`\`\`
+```
 
 ## 🏗️ Estrutura do Projeto
 
-\`\`\`
+```
 chatbot-ui/
 ├── app/
 │   ├── globals.css          # Estilos globais
@@ -104,7 +104,7 @@ chatbot-ui/
 ├── hooks/
 │   └── use-websocket.ts     # Hook personalizado para WebSocket
 └── README.md
-\`\`\`
+```
 
 ## 🎯 Como Usar
 
@@ -127,14 +127,14 @@ chatbot-ui/
 #### Alterar Tema
 Os estilos estão definidos em `app/globals.css` usando CSS custom properties. Você pode alterar as cores modificando as variáveis CSS:
 
-\`\`\`css
+```css
 :root {
   --bg-primary: #1a1a1a;
   --bg-secondary: #2a2a2a;
   --text-primary: #ffffff;
   /* ... outras variáveis */
 }
-\`\`\`
+```
 
 #### Adicionar Funcionalidades
 - **Novos tipos de mensagem**: Modifique o hook `useWebSocket` e o componente `ChatArea`
